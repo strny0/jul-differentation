@@ -1,0 +1,7 @@
+name = "project_strnaon2"
+uuid = "9519cc69-4c32-4d90-9cb7-68b12993fe4b"
+authors = ["Jakub Strnad <strnaon2@fel.cvut.cz>"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.7"
