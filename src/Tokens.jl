@@ -23,3 +23,43 @@ end
 struct FunctionToken <: Token
     func::String
 end
+
+function tokenize(expr::String)
+    tokens = Token[]
+    i = 1
+    while i <= length(expr)
+        c = expr[i]
+        if c in "0123456789."
+            start = i
+            while i <= length(expr) && (expr[i] in "0123456789." || (i > start && expr[i] == 'e'))
+                i += 1
+            end
+            push!(tokens, NumberToken(parse(Float64, expr[start:i-1])))
+        elseif c in "+-*/^"
+            push!(tokens, OperatorToken(c))
+            i += 1
+        elseif c == '('
+            push!(tokens, LeftParenToken())
+            i += 1
+        elseif c == ')'
+            push!(tokens, RightParenToken())
+            i += 1
+        elseif isletter(c) || c == '_'
+            start = i
+            while i <= length(expr) && (isletter(expr[i]) || isdigit(expr[i]) || expr[i] == '_')
+                i += 1
+            end
+            token_str = expr[start:i-1]
+            if token_str in supported_functions
+                push!(tokens, FunctionToken(token_str))
+            elseif token_str in keys(constant_map)
+                push!(tokens, ConstantToken(token_str))
+            else
+                push!(tokens, VariableToken(token_str))
+            end
+        else
+            i += 1
+        end
+    end
+    return tokens
+end
