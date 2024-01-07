@@ -1,8 +1,5 @@
-module Parser
-export parse_function
-
-include("Tokens.jl")
 include("AST.jl")
+include("Tokens.jl")
 
 is_token_type(token, token_type) = token isa token_type
 
@@ -97,5 +94,3 @@ function parse_base(tokens::Vector{Token}, current_token_index::Base.RefValue{In
 end
 
 parse_function(expr::String) = parser(tokenize(expr))
-
-end

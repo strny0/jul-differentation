@@ -1,16 +1,3 @@
-module AST
-export (pretty_print_ast,
-ast_to_dot,
-ConstantNode,
-constant_map,
-FunctionNode,
-supported_functions,
-BinaryOpNode,
-NumberNode,
-VariableNode,
-ASTNode
-)
-
 abstract type ASTNode end
 
 struct ConstantNode <: ASTNode
@@ -73,6 +60,30 @@ function pretty_print_ast(node::ASTNode, indent::Int=0)
     end
 end
 
+function ast_inorder(node::ASTNode)
+    if node isa NumberNode
+        print(node.value, " ")
+
+    elseif node isa VariableNode
+        print(node.name, " ")
+
+    elseif node isa ConstantNode
+        println(node.name, " ")
+
+    elseif node isa BinaryOpNode
+        println(indent_str, "BinaryOpNode: ", node.op)
+        pretty_print_ast(node.left, indent + 1)
+        pretty_print_ast(node.right, indent + 1)
+
+    elseif node isa FunctionNode
+        println(indent_str, "FunctionNode: ", node.func)
+        pretty_print_ast(node.arg, indent + 1)
+
+    else
+        println(indent_str, "Unknown Node Type")
+    end
+end
+
 global node_counter = 1
 function get_unique_node_label()
     label = "node" * string(node_counter)
@@ -116,6 +127,4 @@ function _ast_to_dot_helper(node::ASTNode, parent_label::Union{Nothing,String})
     end
 
     dot_str
-end
-
 end
