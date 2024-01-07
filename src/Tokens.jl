@@ -38,7 +38,7 @@ function tokenize(expr::String)
             end
             push!(tokens, NumberToken(parse(Float64, expr[start:i-1])))
         elseif c in "+-"
-            if prev_token == nothing || isa(prev_token, OperatorToken) || isa(prev_token, LeftParenToken) || isa(prev_token, FunctionToken)
+            if isnothing(prev_token) || isa(prev_token, OperatorToken) || isa(prev_token, LeftParenToken) || isa(prev_token, FunctionToken)
                 # Unary +-
                 op = c == '+' ? 'p' : 'm'
                 push!(tokens, OperatorToken(op))
