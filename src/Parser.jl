@@ -1,3 +1,6 @@
+module Parser
+export parse_function
+
 include("Tokens.jl")
 include("AST.jl")
 
@@ -91,4 +94,8 @@ function parse_base(tokens::Vector{Token}, current_token_index::Base.RefValue{In
     else
         error("Unexpected token: $token")
     end
+end
+
+parse_function(expr::String) = parser(tokenize(expr))
+
 end

@@ -1,3 +1,16 @@
+module AST
+export (pretty_print_ast,
+ast_to_dot,
+ConstantNode,
+constant_map,
+FunctionNode,
+supported_functions,
+BinaryOpNode,
+NumberNode,
+VariableNode,
+ASTNode
+)
+
 abstract type ASTNode end
 
 struct ConstantNode <: ASTNode
@@ -103,4 +116,6 @@ function _ast_to_dot_helper(node::ASTNode, parent_label::Union{Nothing,String})
     end
 
     dot_str
+end
+
 end
