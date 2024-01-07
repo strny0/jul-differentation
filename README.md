@@ -1,1 +1,1 @@
-# project_strnaon2
+# Symbollic derivation and simplification library
