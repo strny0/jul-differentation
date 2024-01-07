@@ -27,6 +27,8 @@ end
 function tokenize(expr::String)
     tokens = Token[]
     i = 1
+    prev_token = nothing
+
     while i <= length(expr)
         c = expr[i]
         if c in "0123456789."
@@ -35,7 +37,17 @@ function tokenize(expr::String)
                 i += 1
             end
             push!(tokens, NumberToken(parse(Float64, expr[start:i-1])))
-        elseif c in "+-*/^"
+        elseif c in "+-"
+            if prev_token == nothing || isa(prev_token, OperatorToken) || isa(prev_token, LeftParenToken) || isa(prev_token, FunctionToken)
+                # Unary +-
+                op = c == '+' ? 'p' : 'm'
+                push!(tokens, OperatorToken(op))
+            else
+                # Binary +-
+                push!(tokens, OperatorToken(c))
+            end
+            i += 1
+        elseif c in "*/^" # Always binary operators
             push!(tokens, OperatorToken(c))
             i += 1
         elseif c == '('
@@ -58,8 +70,13 @@ function tokenize(expr::String)
                 push!(tokens, VariableToken(token_str))
             end
         else
-            i += 1
+            i += 1 # Skip unrecognized characters (whitespace)
+        end
+
+        if !isempty(tokens)
+            prev_token = tokens[end]
         end
     end
+
     return tokens
 end

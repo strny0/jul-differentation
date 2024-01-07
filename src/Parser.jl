@@ -47,6 +47,10 @@ function parse_expr_precedence3(tokens::Vector{Token}, current_token_index::Base
 end
 
 function parse_base(tokens::Vector{Token}, current_token_index::Base.RefValue{Int})
+    if current_token_index[] > length(tokens)
+        error("Unexpected end of expression")
+    end
+
     token = tokens[current_token_index[]]
     current_token_index[] += 1
 
@@ -56,6 +60,13 @@ function parse_base(tokens::Vector{Token}, current_token_index::Base.RefValue{In
         return VariableNode(token.name)
     elseif is_token_type(token, ConstantToken)
         return ConstantNode(token.name, get(constant_map, token.name, 0))
+    elseif is_token_type(token, OperatorToken) && (token.op == 'p' || token.op == 'm') # Handle unary operators
+        operand = parse_expr_precedence3(tokens, current_token_index)
+        if token.op == 'm'
+            return BinaryOpNode('-', NumberNode(-1), operand)
+        else
+            return operand
+        end
     elseif is_token_type(token, LeftParenToken)
         expr = parse_expr_precedence1(tokens, current_token_index)
         if current_token_index[] > length(tokens) || !is_token_type(tokens[current_token_index[]], RightParenToken)
@@ -64,7 +75,6 @@ function parse_base(tokens::Vector{Token}, current_token_index::Base.RefValue{In
         current_token_index[] += 1
         return expr
     elseif is_token_type(token, FunctionToken)
-        # Expect a left parenthesis after the function token
         if current_token_index[] > length(tokens) || !is_token_type(tokens[current_token_index[]], LeftParenToken)
             error("Expected '(' after function token")
         end
@@ -72,7 +82,6 @@ function parse_base(tokens::Vector{Token}, current_token_index::Base.RefValue{In
 
         arg = parse_expr_precedence1(tokens, current_token_index)
 
-        # Ensure closing right parenthesis is present
         if current_token_index[] > length(tokens) || !is_token_type(tokens[current_token_index[]], RightParenToken)
             error("Expected ')' after function argument")
         end
@@ -82,14 +91,4 @@ function parse_base(tokens::Vector{Token}, current_token_index::Base.RefValue{In
     else
         error("Unexpected token: $token")
     end
-end
-
-
-# Example usage
-expr = "3-(-2*9/y)"
-tokens = tokenize(expr)
-ast = parser(tokens)
-
-open("test.dot", "w") do f
-    write(f, ast_to_dot(expr, ast))
 end
