@@ -49,3 +49,38 @@ function evaluate(node::ASTNode, variable::String, value::Float64)::Float64
         error("Simplificaiton not implemented for this type of node")
     end
 end
+
+function format_function(node::ASTNode; top=true)::String
+    out = ""
+    paren = false
+    if node isa NumberNode
+        out = "$(node.value)"
+    elseif node isa VariableNode
+        out = node.name
+    elseif node isa ConstantNode
+        out = node.name
+    elseif node isa BinaryOpNode
+        paren = true
+        if node.op == '+'
+            out = format_function(node.left; top=false) * " + " * format_function(node.right; top=false)
+        elseif node.op == '-'
+            out = format_function(node.left; top=false) * " - " * format_function(node.right; top=false)
+        elseif node.op == '*'
+            out = format_function(node.left; top=false) * " * " * format_function(node.right; top=false)
+        elseif node.op == '/'
+            out = format_function(node.left; top=false) * "/" * format_function(node.right; top=false)
+        elseif node.op == '^'
+            out = format_function(node.left; top=false) * "^" * format_function(node.right; top=false)
+        else
+            error("Unsupported binary operation '$(node.op)'.")
+        end
+    elseif node isa FunctionNode
+        out = "$(node.func)(" * format_function(node.arg; top=false) * ")"
+    else
+        error("Formatting not implemented for this type of node")
+    end
+    if paren && !top
+        out = "(" * out * ")"
+    end
+    return out
+end

@@ -38,7 +38,7 @@ function differentiate_binary_op(node::BinaryOpNode, variable::String)
             u_to_the_new_exponent = BinaryOpNode('^', node.left, new_exponent)
             du_dx = differentiate(node.left, variable)
             return BinaryOpNode('*', BinaryOpNode('*', NumberNode(exponent), u_to_the_new_exponent), du_dx)
-        else # General case of power rule
+        else # Chain rule
             u = node.left
             v = node.right
             u_prime = differentiate(u, variable)
@@ -68,9 +68,12 @@ function differentiate_function(node::FunctionNode, variable::String)
 
 end
 
-expr = "sin(x)/cos(x)"
+expr = "-(sin(x+y))^2+1-x"
 func = simplify(parse_function(expr))
 diff = simplify(differentiate(func, "x"))
+
+format_function(func)
+format_function(diff)
 
 open("test.dot", "w") do f
     write(f, ast_to_dot("∂f/∂x $expr", diff))

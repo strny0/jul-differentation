@@ -1,6 +1,7 @@
 abstract type ASTNode end
+abstract type TermNode <: ASTNode end
 
-struct ConstantNode <: ASTNode
+struct ConstantNode <: TermNode
     name::String
     value::Float64
 end
@@ -26,11 +27,11 @@ struct BinaryOpNode <: ASTNode
     right::ASTNode
 end
 
-struct NumberNode <: ASTNode
+struct NumberNode <: TermNode
     value::Float64
 end
 
-struct VariableNode <: ASTNode
+struct VariableNode <: TermNode
     name::String
 end
 
