@@ -2,7 +2,7 @@ include("AST.jl")
 
 
 function evaluate(node::ASTNode)::Float64
-    evaluate(node, "x", 0)
+    evaluate(node, "", 0.0)
 end
 
 function evaluate(node::ASTNode, variable::String, value::Float64)::Float64
@@ -31,7 +31,7 @@ function evaluate(node::ASTNode, variable::String, value::Float64)::Float64
             error("Unsupported binary operation '$(node.op)'.")
         end
     elseif node isa FunctionNode
-        ["sin", "cos", "tan", "log", "ln"]
+        # ["sin", "cos", "tan", "log", "ln"]
         if node.func == "sin"
             return sin(evaluate(node.arg, variable, value))
         elseif node.func == "cos"

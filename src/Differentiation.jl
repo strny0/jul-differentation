@@ -53,12 +53,25 @@ function differentiate_binary_op(node::BinaryOpNode, variable::String)
     end
 end
 
-expr = "(x^2)/2+(x^3)/3"
-func = parse_function(expr)
+function differentiate_function(node::FunctionNode, variable::String)
+    if node.func == "sin"
+        return BinaryOpNode('*', differentiate(node.arg, variable), FunctionNode("cos", node.arg))
+    elseif node.func == "cos"
+        return BinaryOpNode('*', differentiate(node.arg, variable), BinaryOpNode('*', NumberNode(-1.0), FunctionNode("sin", node.arg)))
+    elseif node.func == "log"
+        return BinaryOpNode('*', differentiate(node.arg, variable), BinaryOpNode('/', NumberNode(1.0), node.arg))
+    elseif node.func == "ln"
+        return BinaryOpNode('*', differentiate(node.arg, variable), BinaryOpNode('/', NumberNode(1.0), node.arg))
+    else
+        error("Unsupported function '$(node.func)'.")
+    end
+
+end
+
+expr = "sin(x)/cos(x)"
+func = simplify(parse_function(expr))
 diff = simplify(differentiate(func, "x"))
 
-pretty_print_ast(diff)
-
 open("test.dot", "w") do f
-    write(f, ast_to_dot(expr, diff))
+    write(f, ast_to_dot("∂f/∂x $expr", diff))
 end
