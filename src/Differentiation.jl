@@ -23,14 +23,12 @@ end
 function differentiate_binary_op(node::BinaryOpNode, wrt_var::String)
     if node.op == '+' # Differentiate parts
         return BinaryOpNode('+', differentiate(node.left, wrt_var), differentiate(node.right, wrt_var))
-    elseif node.op == '-' # Differentiate parts
-        return BinaryOpNode('-', differentiate(node.left, wrt_var), differentiate(node.right, wrt_var))
     elseif node.op == '*' # Product rule
         left_diff = BinaryOpNode('*', node.left, differentiate(node.right, wrt_var))
         right_diff = BinaryOpNode('*', differentiate(node.left, wrt_var), node.right)
         return BinaryOpNode('+', left_diff, right_diff)
     elseif node.op == '/' # Quotient rule
-        numerator = BinaryOpNode('-', BinaryOpNode('*', node.right, differentiate(node.left, wrt_var)), BinaryOpNode('*', node.left, differentiate(node.right, wrt_var)))
+        numerator = BinaryOpNode('+', BinaryOpNode('*', node.right, differentiate(node.left, wrt_var)), UnaryOpNode('-', BinaryOpNode('*', node.left, differentiate(node.right, wrt_var))))
         denominator = BinaryOpNode('^', node.right, NumberNode(2.0))
         return BinaryOpNode('/', numerator, denominator)
     elseif node.op == '^'
@@ -67,8 +65,8 @@ function differentiate_function(node::FunctionNode, variable::String)
     end
 end
 
-expr = "--x"
-p = simplify(parse_function(expr))
+expr = "sin(x)/cos(x)"
+func = simplify(parse_function(expr))
 diff = simplify(differentiate(func, "x"))
 
 format_function(func)

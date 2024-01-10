@@ -117,6 +117,9 @@ function _ast_to_dot_helper(node::ASTNode, parent_label::Union{Nothing,String})
         dot_str *= "$current_label [label=\"$(node.name)\"];\n"
     elseif node isa ConstantNode
         dot_str *= "$current_label [label=\"$(node.name)\"];\n"
+    elseif node isa UnaryOpNode
+        dot_str *= "$current_label [label=\"$(node.op)\"];\n"
+        dot_str *= _ast_to_dot_helper(node.child, current_label)
     elseif node isa BinaryOpNode
         dot_str *= "$current_label [label=\"$(node.op)\"];\n"
         dot_str *= _ast_to_dot_helper(node.left, current_label)
