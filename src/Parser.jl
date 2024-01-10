@@ -14,6 +14,10 @@ function parse_expr_precedence1(tokens::Vector{Token}, current_token_index::Base
         op = tokens[current_token_index[]].op
         current_token_index[] += 1
         rhs = parse_expr_precedence2(tokens, current_token_index)
+        if op == '-'
+            rhs = UnaryOpNode('-', rhs)
+            op = '+'
+        end
         lhs = BinaryOpNode(op, lhs, rhs)
     end
     return lhs
@@ -63,9 +67,9 @@ function parse_base(tokens::Vector{Token}, current_token_index::Base.RefValue{In
     elseif is_token_type(token, OperatorToken) && (token.op == 'p' || token.op == 'm') # Handle unary operators
         operand = parse_expr_precedence3(tokens, current_token_index)
         if token.op == 'm'
-            return BinaryOpNode('-', NumberNode(-1), operand)
+            return UnaryOpNode('-', operand)
         else
-            return operand
+            return operand # p is unary plus
         end
     elseif is_token_type(token, LeftParenToken)
         expr = parse_expr_precedence1(tokens, current_token_index)

@@ -8,6 +8,8 @@ function subtree_contains_variable(node::ASTNode)::Bool
         return true
     elseif node isa ConstantNode
         return false
+    elseif node isa UnaryOpNode
+        return subtree_contains_variable(node.child)
     elseif node isa BinaryOpNode
         return subtree_contains_variable(node.left) || subtree_contains_variable(node.right)
     elseif node isa FunctionNode
@@ -29,10 +31,13 @@ end
 function simplify_helper(node::ASTNode)::ASTNode
     if node isa TermNode
         return node
+    elseif node isa UnaryOpNode
+        if (node.op == '-' && node.child isa UnaryOpNode && node.child.op == '-')
+            return node.child.child
+        end
     elseif node isa BinaryOpNode
         left = !subtree_contains_variable(node.left) ? NumberNode(evaluate(node.left)) : simplify(node.left)
         right = !subtree_contains_variable(node.right) ? NumberNode(evaluate(node.right)) : simplify(node.right)
-
         if node.op == '+'
             if (!(left isa TermNode) && right isa TermNode)
                 t = left
@@ -85,17 +90,21 @@ function simplify_helper(node::ASTNode)::ASTNode
                 return NumberNode(1.0)
             end
         elseif node.op == '^'
-
+            if (node.right == NumberNode(1.0))
+                return node.left
+            end
         end
 
         return BinaryOpNode(node.op, left, right)
     elseif node isa FunctionNode
-        if (node.func in ["ln", "log"] && node.arg == ConstantNode("e", get(constant_map, "e", -)))
+        if (node.func in ["ln"] && node.arg == ConstantNode("e", get(constant_map, "e", -)))
             return NumberNode(1.0)
         end
 
         return FunctionNode(node.func, simplify(node.arg))
     else
-        error("Simplificaiton not implemented for this type of node")
+        error("Simplificaiton not implemented for this type of node.")
     end
+
+    return node
 end

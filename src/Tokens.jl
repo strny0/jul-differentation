@@ -1,20 +1,20 @@
 abstract type Token end
 
-struct ConstantToken <: Token
+struct VariableToken <: Token
     name::String
 end
 
-struct LeftParenToken <: Token end
-
-struct RightParenToken <: Token end
-
-struct VariableToken <: Token
+struct ConstantToken <: Token
     name::String
 end
 
 struct NumberToken <: Token
     value::Float64
 end
+
+struct LeftParenToken <: Token end
+
+struct RightParenToken <: Token end
 
 struct OperatorToken <: Token
     op::Char

@@ -16,6 +16,12 @@ function evaluate(node::ASTNode, variable::String, value::Float64)::Float64
         end
     elseif node isa ConstantNode
         return node.value
+    elseif node isa UnaryOpNode
+        if node.op == '-'
+            return -1.0 * evaluate(node.child)
+        else
+            error("Unsupported unary operation '$(node.op)'.")
+        end
     elseif node isa BinaryOpNode
         if node.op == '+'
             return evaluate(node.left, variable, value) + evaluate(node.right, variable, value)
@@ -31,15 +37,10 @@ function evaluate(node::ASTNode, variable::String, value::Float64)::Float64
             error("Unsupported binary operation '$(node.op)'.")
         end
     elseif node isa FunctionNode
-        # ["sin", "cos", "tan", "log", "ln"]
         if node.func == "sin"
             return sin(evaluate(node.arg, variable, value))
         elseif node.func == "cos"
             return cos(evaluate(node.arg, variable, value))
-        elseif node.func == "tan"
-            return tan(evaluate(node.arg, variable, value))
-        elseif node.func == "log"
-            return log(evaluate(node.arg, variable, value))
         elseif node.func == "ln"
             return log(evaluate(node.arg, variable, value))
         else
@@ -59,12 +60,16 @@ function format_function(node::ASTNode; top=true)::String
         out = node.name
     elseif node isa ConstantNode
         out = node.name
+    elseif node isa UnaryOpNode
+        if node.op == '-'
+            out = "(-" * format_function(node.child; top=false) * ")"
+        else
+            error("Unsupported unary operation '$(node.op)'.")
+        end
     elseif node isa BinaryOpNode
         paren = true
         if node.op == '+'
             out = format_function(node.left; top=false) * " + " * format_function(node.right; top=false)
-        elseif node.op == '-'
-            out = format_function(node.left; top=false) * " - " * format_function(node.right; top=false)
         elseif node.op == '*'
             out = format_function(node.left; top=false) * " * " * format_function(node.right; top=false)
         elseif node.op == '/'

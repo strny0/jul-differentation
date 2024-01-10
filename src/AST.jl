@@ -19,7 +19,12 @@ struct FunctionNode <: ASTNode
 end
 
 # Supported functions
-supported_functions = ["sin", "cos", "tan", "log", "ln"]
+supported_functions = ["sin", "cos", "ln"]
+
+struct UnaryOpNode <: ASTNode
+    op::Char
+    child::ASTNode
+end
 
 struct BinaryOpNode <: ASTNode
     op::Char
