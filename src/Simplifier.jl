@@ -51,7 +51,6 @@ function simplify_helper(root_node::ASTNode)::ASTNode
         end
 
         push!(stack, (node, true))
-
         if node isa UnaryOpNode
             push!(stack, (node.child, false))
         elseif node isa BinaryOpNode
@@ -72,8 +71,14 @@ function simplify_node(node::ASTNode, simplified_nodes::Dict{ASTNode,ASTNode})::
         child = get(simplified_nodes, node.child, node.child)
         if node.op == '-' && child isa UnaryOpNode && child.op == '-'
             return child.child
+        elseif node.op == '-' && child isa BinaryOpNode && child.op == '*'
+            if child.left isa UnaryOpNode && child.left.op == '-'
+                return BinaryOpNode('*', child.left.child, child.right)
+            elseif child.right isa UnaryOpNode && child.right.op == '-'
+                return BinaryOpNode('*', child.left, child.right.child)
+            end
         else
-            return UnaryOpNode(node.op, child)
+            return UnaryOpNode('-', child)
         end
     elseif node isa BinaryOpNode
         left = get(simplified_nodes, node.left, node.left)
@@ -100,17 +105,22 @@ function simplify_node(node::ASTNode, simplified_nodes::Dict{ASTNode,ASTNode})::
                 left = right
                 right = t
             end
+
             if (left isa NumberNode)
                 if (left.value == 0.0)
                     return NumberNode(0.0)
                 elseif (left.value == 1.0)
                     return right
+                elseif (left.value == -1.0)
+                    return UnaryOpNode('-', right)
                 end
             elseif (right isa NumberNode)
                 if (right.value == 0.0)
                     return NumberNode(0.0)
                 elseif (right.value == 1.0)
                     return left
+                elseif (right.value == -1.0)
+                    return UnaryOpNode('-', left)
                 end
             end
 

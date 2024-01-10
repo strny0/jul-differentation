@@ -72,6 +72,9 @@ diff = simplify(differentiate(func, "x"))
 format_function(func)
 diff_str = format_function(diff)
 
+test_f = FunctionNode("sin", BinaryOpNode('*', FunctionNode("sin", VariableNode("x")), BinaryOpNode('*', NumberNode(1.0), BinaryOpNode('*', NumberNode(-1.0), FunctionNode("sin", VariableNode("x"))))))
+simplify(test_f)
+
 
 open("test.dot", "w") do f
     write(f, ast_to_dot("∂f/∂x $expr =\n$diff_str", diff));

@@ -1,6 +1,6 @@
 using Project
 using Test
 
-@testset "Project.jl" begin
-    # Write your tests here.
+@testset "Simplifier.jl" begin
+    @test subtree_contains_variable(Variable("x"))
 end

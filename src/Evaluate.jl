@@ -84,7 +84,7 @@ function format_function(node::ASTNode; top=true)::String
     else
         error("Formatting not implemented for this type of node")
     end
-    if paren && !top
+    if paren && !top && !(startswith(out, '(') && endswith(out, ')'))
         out = "(" * out * ")"
     end
     return out
