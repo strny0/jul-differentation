@@ -1,22 +1,31 @@
 include("AST.jl")
 include("Evaluate.jl")
 
+import DataStructures as DS
+
 function subtree_contains_variable(node::ASTNode)::Bool
-    if node isa NumberNode
-        return false
-    elseif node isa VariableNode
-        return true
-    elseif node isa ConstantNode
-        return false
-    elseif node isa UnaryOpNode
-        return subtree_contains_variable(node.child)
-    elseif node isa BinaryOpNode
-        return subtree_contains_variable(node.left) || subtree_contains_variable(node.right)
-    elseif node isa FunctionNode
-        return subtree_contains_variable(node.arg)
-    else
-        error("Not implemented for this type of node")
+    stack = DS.Stack{ASTNode}()
+    push!(stack, node)
+
+    while !isempty(stack)
+        current = pop!(stack)
+
+        if current isa NumberNode || current isa ConstantNode
+            continue
+        elseif current isa VariableNode
+            return true
+        elseif current isa UnaryOpNode
+            push!(stack, current.child)
+        elseif current isa BinaryOpNode
+            push!(stack, current.left)
+            push!(stack, current.right)
+        elseif current isa FunctionNode
+            push!(stack, current.arg)
+        else
+            error("Not implemented for this type of node")
+        end
     end
+    return false
 end
 
 function simplify(node::ASTNode)::ASTNode
@@ -28,16 +37,47 @@ function simplify(node::ASTNode)::ASTNode
     return node
 end
 
-function simplify_helper(node::ASTNode)::ASTNode
+function simplify_helper(root_node::ASTNode)::ASTNode
+    simplified_nodes = Dict{ASTNode,ASTNode}()
+    stack = DS.Stack{Tuple{ASTNode,Bool}}()
+    push!(stack, (root_node, false))
+
+    while !isempty(stack)
+        (node, is_processed) = pop!(stack)
+
+        if is_processed
+            simplified_nodes[node] = simplify_node(node, simplified_nodes)
+            continue
+        end
+
+        push!(stack, (node, true))
+
+        if node isa UnaryOpNode
+            push!(stack, (node.child, false))
+        elseif node isa BinaryOpNode
+            push!(stack, (node.left, false))
+            push!(stack, (node.right, false))
+        elseif node isa FunctionNode
+            push!(stack, (node.arg, false))
+        end
+    end
+
+    return get(simplified_nodes, root_node, root_node)
+end
+
+function simplify_node(node::ASTNode, simplified_nodes::Dict{ASTNode,ASTNode})::ASTNode
     if node isa TermNode
         return node
     elseif node isa UnaryOpNode
-        if (node.op == '-' && node.child isa UnaryOpNode && node.child.op == '-')
-            return node.child.child
+        child = get(simplified_nodes, node.child, node.child)
+        if node.op == '-' && child isa UnaryOpNode && child.op == '-'
+            return child.child
+        else
+            return UnaryOpNode(node.op, child)
         end
     elseif node isa BinaryOpNode
-        left = !subtree_contains_variable(node.left) ? NumberNode(evaluate(node.left)) : simplify(node.left)
-        right = !subtree_contains_variable(node.right) ? NumberNode(evaluate(node.right)) : simplify(node.right)
+        left = get(simplified_nodes, node.left, node.left)
+        right = get(simplified_nodes, node.right, node.right)
         if node.op == '+'
             if (!(left isa TermNode) && right isa TermNode)
                 t = left
@@ -60,7 +100,6 @@ function simplify_helper(node::ASTNode)::ASTNode
                 left = right
                 right = t
             end
-
             if (left isa NumberNode)
                 if (left.value == 0.0)
                     return NumberNode(0.0)
@@ -97,11 +136,11 @@ function simplify_helper(node::ASTNode)::ASTNode
 
         return BinaryOpNode(node.op, left, right)
     elseif node isa FunctionNode
+        arg = get(simplified_nodes, node.arg, node.arg)
         if (node.func in ["ln"] && node.arg == ConstantNode("e", get(constant_map, "e", -)))
             return NumberNode(1.0)
         end
-
-        return FunctionNode(node.func, simplify(node.arg))
+        return FunctionNode(node.func, arg)
     else
         error("Simplificaiton not implemented for this type of node.")
     end

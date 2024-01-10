@@ -1,3 +1,5 @@
+include("Maps.jl")
+
 abstract type ASTNode end
 abstract type TermNode <: ASTNode end
 
@@ -6,20 +8,10 @@ struct ConstantNode <: TermNode
     value::Float64
 end
 
-# Supported constants
-constant_map = Dict(
-    "π" => 3.141592653589793,
-    "pi" => 3.141592653589793,
-    "e" => 2.718281828459045,
-)
-
 struct FunctionNode <: ASTNode
     func::String
     arg::ASTNode
 end
-
-# Supported functions
-supported_functions = ["sin", "cos", "ln"]
 
 struct UnaryOpNode <: ASTNode
     op::Char
@@ -110,10 +102,8 @@ function _ast_to_dot_helper(node::ASTNode, parent_label::Union{Nothing,String})
     dot_str = ""
 
     if node isa NumberNode
-        println("$current_label [label=\"$(node.value)\"];\n")
         dot_str *= "$current_label [label=\"$(node.value)\"];\n"
     elseif node isa VariableNode
-        println("$current_label [label=\"$(node.name)\"];\n")
         dot_str *= "$current_label [label=\"$(node.name)\"];\n"
     elseif node isa ConstantNode
         dot_str *= "$current_label [label=\"$(node.name)\"];\n"

@@ -1,3 +1,5 @@
+include("Maps.jl")
+
 abstract type Token end
 
 struct VariableToken <: Token
