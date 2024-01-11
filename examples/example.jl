@@ -1,4 +1,4 @@
-using Project
+using SymbollicDerivation
 
 expr = "x + cos(x)^2"
 func = simplify(parse_function(expr))

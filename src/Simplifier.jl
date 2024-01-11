@@ -1,5 +1,3 @@
-import DataStructures as DS
-
 function subtree_contains_variable(node::ASTNode)::Bool
     stack = DS.Stack{ASTNode}()
     push!(stack, node)

@@ -1,4 +1,6 @@
-module Project
+module SymbollicDerivation
+
+import DataStructures as DS
 
 include("Maps.jl")
 include("Tokens.jl")
@@ -14,5 +16,4 @@ export parse_function,
     evaluate,
     format_function,
     simplify
-
 end
