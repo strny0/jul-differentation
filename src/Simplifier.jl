@@ -1,6 +1,3 @@
-include("AST.jl")
-include("Evaluate.jl")
-
 import DataStructures as DS
 
 function subtree_contains_variable(node::ASTNode)::Bool

@@ -1,6 +1,3 @@
-include("AST.jl")
-include("Tokens.jl")
-
 is_token_type(token, token_type) = token isa token_type
 
 function parser(tokens::Vector{Token})

@@ -1,6 +1,3 @@
-include("AST.jl")
-
-
 function evaluate(node::ASTNode)::Float64
     evaluate(node, "", 0.0)
 end
