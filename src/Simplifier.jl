@@ -29,12 +29,12 @@ function simplify(node::ASTNode)::ASTNode
     prev = nothing
     while node != prev
         prev = deepcopy(node)
-        node = simplify_helper(node)
+        node = _simplify_helper(node)
     end
     return node
 end
 
-function simplify_helper(root_node::ASTNode)::ASTNode
+function _simplify_helper(root_node::ASTNode)::ASTNode
     simplified_nodes = Dict{ASTNode,ASTNode}()
     stack = DS.Stack{Tuple{ASTNode,Bool}}()
     push!(stack, (root_node, false))
@@ -43,7 +43,7 @@ function simplify_helper(root_node::ASTNode)::ASTNode
         (node, is_processed) = pop!(stack)
 
         if is_processed
-            simplified_nodes[node] = simplify_node(node, simplified_nodes)
+            simplified_nodes[node] = simplify_rule(node, simplified_nodes)
             continue
         end
 
@@ -61,96 +61,98 @@ function simplify_helper(root_node::ASTNode)::ASTNode
     return get(simplified_nodes, root_node, root_node)
 end
 
-function simplify_node(node::ASTNode, simplified_nodes::Dict{ASTNode,ASTNode})::ASTNode
-    if node isa TermNode
-        return node
-    elseif node isa UnaryOpNode
-        child = get(simplified_nodes, node.child, node.child)
-        if node.op == '-' && child isa UnaryOpNode && child.op == '-'
-            return child.child
-        elseif node.op == '-' && child isa BinaryOpNode && child.op == '*'
-            if child.left isa UnaryOpNode && child.left.op == '-'
-                return BinaryOpNode('*', child.left.child, child.right)
-            elseif child.right isa UnaryOpNode && child.right.op == '-'
-                return BinaryOpNode('*', child.left, child.right.child)
-            end
-        else
-            return UnaryOpNode('-', child)
+function simplify_rule(node::TermNode, simplified_nodes::Dict{ASTNode,ASTNode})::ASTNode
+    return node
+end
+
+function simplify_rule(node::BinaryOpNode, simplified_nodes::Dict{ASTNode,ASTNode})::ASTNode
+    left = get(simplified_nodes, node.left, node.left)
+    right = get(simplified_nodes, node.right, node.right)
+    if node.op == '+'
+        if (!(left isa TermNode) && right isa TermNode)
+            t = left
+            left = right
+            right = t
         end
-    elseif node isa BinaryOpNode
-        left = get(simplified_nodes, node.left, node.left)
-        right = get(simplified_nodes, node.right, node.right)
-        if node.op == '+'
-            if (!(left isa TermNode) && right isa TermNode)
-                t = left
-                left = right
-                right = t
-            end
 
-            if (left == right)
-                return BinaryOpNode('*', left, NumberNode(2.0))
-            end
+        if (left == right)
+            return BinaryOpNode('*', left, NumberNode(2.0))
+        end
 
-            if (left isa NumberNode && left.value == 0.0)
-                return right
-            elseif (right isa NumberNode && right.value == 0.0)
-                return left
-            end
-        elseif node.op == '*'
-            if (!(left isa TermNode) && right isa TermNode)
-                t = left
-                left = right
-                right = t
-            end
+        if (left isa NumberNode && left.value == 0.0)
+            return right
+        elseif (right isa NumberNode && right.value == 0.0)
+            return left
+        end
+    elseif node.op == '*'
+        if (!(left isa TermNode) && right isa TermNode)
+            t = left
+            left = right
+            right = t
+        end
 
-            if (left isa NumberNode)
-                if (left.value == 0.0)
-                    return NumberNode(0.0)
-                elseif (left.value == 1.0)
-                    return right
-                elseif (left.value == -1.0)
-                    return UnaryOpNode('-', right)
-                end
-            elseif (right isa NumberNode)
-                if (right.value == 0.0)
-                    return NumberNode(0.0)
-                elseif (right.value == 1.0)
-                    return left
-                elseif (right.value == -1.0)
-                    return UnaryOpNode('-', left)
-                end
-            end
-
-            if (right isa BinaryOpNode && right.op == '*' && left == right.left)
-                return BinaryOpNode('*', BinaryOpNode('^', left, NumberNode(2.0)), right.right)
-            end
-
-            if (left == right)
-                return BinaryOpNode('^', left, NumberNode(2.0))
-            end
-
-        elseif node.op == "/"
-            if (left == NumberNode(0.0))
+        if (left isa NumberNode)
+            if (left.value == 0.0)
                 return NumberNode(0.0)
-            elseif (left == right) # assuming right is not 0, otherwise it is a bug
-                return NumberNode(1.0)
+            elseif (left.value == 1.0)
+                return right
+            elseif (left.value == -1.0)
+                return UnaryOpNode('-', right)
             end
-        elseif node.op == '^'
-            if (node.right == NumberNode(1.0))
-                return node.left
+        elseif (right isa NumberNode)
+            if (right.value == 0.0)
+                return NumberNode(0.0)
+            elseif (right.value == 1.0)
+                return left
+            elseif (right.value == -1.0)
+                return UnaryOpNode('-', left)
             end
         end
 
-        return BinaryOpNode(node.op, left, right)
-    elseif node isa FunctionNode
-        arg = get(simplified_nodes, node.arg, node.arg)
-        if (node.func in ["ln"] && node.arg == ConstantNode("e", get(constant_map, "e", -)))
+        if (right isa BinaryOpNode && right.op == '*' && left == right.left)
+            return BinaryOpNode('*', BinaryOpNode('^', left, NumberNode(2.0)), right.right)
+        end
+
+        if (left == right)
+            return BinaryOpNode('^', left, NumberNode(2.0))
+        end
+    elseif node.op == "/"
+        if (left == NumberNode(0.0))
+            return NumberNode(0.0)
+        elseif (left == right) # assuming right is not 0, otherwise it is a bug
             return NumberNode(1.0)
         end
-        return FunctionNode(node.func, arg)
-    else
-        error("Simplificaiton not implemented for this type of node.")
+    elseif node.op == '^'
+        if (node.right == NumberNode(1.0))
+            return node.left
+        end
     end
 
-    return node
+    return BinaryOpNode(node.op, left, right)
+end
+
+function simplify_rule(node::UnaryOpNode, simplified_nodes::Dict{ASTNode,ASTNode})::ASTNode
+    child = get(simplified_nodes, node.child, node.child)
+    if node.op == '-' && child isa UnaryOpNode && child.op == '-'
+        return child.child
+    elseif node.op == '-' && child isa BinaryOpNode && child.op == '*'
+        if child.left isa UnaryOpNode && child.left.op == '-'
+            return BinaryOpNode('*', child.left.child, child.right)
+        elseif child.right isa UnaryOpNode && child.right.op == '-'
+            return BinaryOpNode('*', child.left, child.right.child)
+        end
+    end
+    return UnaryOpNode('-', child)
+end
+
+function simplify_rule(node::FunctionNode, simplified_nodes::Dict{ASTNode,ASTNode})::ASTNode
+    arg = get(simplified_nodes, node.arg, node.arg)
+    if (node.func in ["ln"] && node.arg == ConstantNode("e", get(constant_map, "e", -)))
+        return NumberNode(1.0)
+    end
+    return FunctionNode(node.func, arg)
+end
+
+function simplify_rule(node::ASTNode, simplified_nodes::Dict{ASTNode,ASTNode})::ASTNode
+    error("Simplification rule not implemented for this type of node.")
 end
