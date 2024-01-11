@@ -116,7 +116,7 @@ function _ast_to_dot_helper(node::ASTNode, parent_label::Union{Nothing,String})
         dot_str *= "$current_label [label=\"$(node.func)\"];\n"
         dot_str *= _ast_to_dot_helper(node.arg, current_label)
     else
-        dot_str *= "$current_label [label=\"Unknown\"];\n"
+        dot_str *= "$current_label [label=\"Not implemented node\"];\n"
     end
 
     if parent_label !== nothing
