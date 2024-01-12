@@ -1,34 +1,40 @@
 abstract type ASTNode end
 abstract type TermNode <: ASTNode end
 
+struct NumberNode <: TermNode
+    value::Float64
+end
+Base.show(io::IO, m::NumberNode) = print(io, m.value)
+
+struct VariableNode <: TermNode
+    name::String
+end
+Base.show(io::IO, m::VariableNode) = print(io, m.name)
+
 struct ConstantNode <: TermNode
     name::String
     value::Float64
 end
+Base.show(io::IO, m::ConstantNode) = print(io, m.name)
 
 struct FunctionNode <: ASTNode
     func::String
     arg::ASTNode
 end
+Base.show(io::IO, m::FunctionNode) = print(io, m.func, '(', m.arg, ')')
 
 struct UnaryOpNode <: ASTNode
     op::Char
     child::ASTNode
 end
+Base.show(io::IO, m::UnaryOpNode) = print(io, m.op, m.child)
 
 struct BinaryOpNode <: ASTNode
     op::Char
     left::ASTNode
     right::ASTNode
 end
-
-struct NumberNode <: TermNode
-    value::Float64
-end
-
-struct VariableNode <: TermNode
-    name::String
-end
+Base.show(io::IO, m::BinaryOpNode) = print(io, "($(m.left))$(m.op)($(m.right))")
 
 function pretty_print_ast(node::ASTNode, indent::Int=0)
     indent_str = "  "^indent
