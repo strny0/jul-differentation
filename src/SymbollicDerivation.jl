@@ -11,6 +11,7 @@ include("Simplifier.jl")
 include("Evaluate.jl")
 
 export parse_function,
+    parse_tokens,
     differentiate,
     ast_to_dot,
     evaluate,

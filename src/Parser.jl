@@ -1,97 +1,92 @@
 is_token_type(token, token_type) = token isa token_type
 
-function parser(tokens::Vector{Token})
-    current_token_index = Ref(1)
-    return parse_expr_precedence1(tokens, current_token_index)
+function parse_tokens(tokens::TokenVector)::ASTNode
+    stack = DS.Deque{ASTNode}()
+    op_stack = DS.Deque{Token}()
+    for token in tokens
+        parse_token!(token, stack, op_stack)
+    end
+
+    while !isempty(op_stack)
+        apply_operator!(stack, pop!(op_stack))
+    end
+
+    return isempty(stack) ? error("Invalid expression") : last(stack)
 end
 
-function parse_expr_precedence1(tokens::Vector{Token}, current_token_index::Base.RefValue{Int})
-    lhs = parse_expr_precedence2(tokens, current_token_index)
-    while current_token_index[] <= length(tokens) && is_token_type(tokens[current_token_index[]], OperatorToken) && (tokens[current_token_index[]].op in ['+', '-'])
-        op = tokens[current_token_index[]].op
-        current_token_index[] += 1
-        rhs = parse_expr_precedence2(tokens, current_token_index)
-        if op == '-'
-            rhs = UnaryOpNode('-', rhs)
-            op = '+'
+function parse_token!(token::NumberToken, stack, op_stack)
+    push!(stack, NumberNode(token.value))
+end
+
+function parse_token!(token::VariableToken, stack, op_stack)
+    push!(stack, VariableNode(token.name))
+end
+
+function parse_token!(token::ConstantToken, stack, op_stack)
+    push!(stack, ConstantNode(token.name, get(constant_map, token.name, 0.0)))
+end
+
+function parse_token!(token::OperatorToken, stack, op_stack)
+    while !isempty(op_stack) && _precedence(last(op_stack)) >= _precedence(token)
+        apply_operator!(stack, pop!(op_stack))
+    end
+    push!(op_stack, token)
+end
+
+function parse_token!(token::LeftParenToken, stack, op_stack)
+    push!(op_stack, token)
+end
+
+function parse_token!(token::RightParenToken, stack, op_stack)
+    while !isempty(op_stack) && !is_token_type(last(op_stack), LeftParenToken)
+        apply_operator!(stack, pop!(op_stack))
+    end
+    pop!(op_stack)
+end
+
+function parse_token!(token::FunctionToken, stack, op_stack)
+    push!(op_stack, token)
+end
+
+function apply_operator!(stack, token)
+    if is_token_type(token, OperatorToken)
+        op = token.op
+        if op in ['+', '-', '*', '/']
+            rhs = pop!(stack)
+            lhs = pop!(stack)
+            push!(stack, BinaryOpNode(op, lhs, rhs))
+        elseif op == '^'
+            exponent = pop!(stack)
+            base = pop!(stack)
+            push!(stack, BinaryOpNode('^', base, exponent))
         end
-        lhs = BinaryOpNode(op, lhs, rhs)
-    end
-    return lhs
-end
-
-function parse_expr_precedence2(tokens::Vector{Token}, current_token_index::Base.RefValue{Int})
-    lhs = parse_expr_precedence3(tokens, current_token_index)
-    while current_token_index[] <= length(tokens) && is_token_type(tokens[current_token_index[]], OperatorToken) && (tokens[current_token_index[]].op in ['*', '/'])
-        op = tokens[current_token_index[]].op
-        current_token_index[] += 1
-        rhs = parse_expr_precedence3(tokens, current_token_index)
-        lhs = BinaryOpNode(op, lhs, rhs)
-    end
-    return lhs
-end
-
-function parse_expr_precedence3(tokens::Vector{Token}, current_token_index::Base.RefValue{Int})
-    if current_token_index[] > length(tokens)
-        error("Unexpected end of expression")
-    end
-
-    base = parse_base(tokens, current_token_index)
-
-    if current_token_index[] <= length(tokens) && is_token_type(tokens[current_token_index[]], OperatorToken) && tokens[current_token_index[]].op == '^'
-        current_token_index[] += 1
-        exponent = parse_expr_precedence3(tokens, current_token_index)  # Exponent itself can be a complex factor
-        return BinaryOpNode('^', base, exponent)
-    else
-        return base
-    end
-end
-
-function parse_base(tokens::Vector{Token}, current_token_index::Base.RefValue{Int})
-    if current_token_index[] > length(tokens)
-        error("Unexpected end of expression")
-    end
-
-    token = tokens[current_token_index[]]
-    current_token_index[] += 1
-
-    if is_token_type(token, NumberToken)
-        return NumberNode(token.value)
-    elseif is_token_type(token, VariableToken)
-        return VariableNode(token.name)
-    elseif is_token_type(token, ConstantToken)
-        return ConstantNode(token.name, get(constant_map, token.name, 0))
-    elseif is_token_type(token, OperatorToken) && (token.op == 'p' || token.op == 'm') # Handle unary operators
-        operand = parse_expr_precedence3(tokens, current_token_index)
-        if token.op == 'm'
-            return UnaryOpNode('-', operand)
-        else
-            return operand # p is unary plus
-        end
-    elseif is_token_type(token, LeftParenToken)
-        expr = parse_expr_precedence1(tokens, current_token_index)
-        if current_token_index[] > length(tokens) || !is_token_type(tokens[current_token_index[]], RightParenToken)
-            error("Expected ')'")
-        end
-        current_token_index[] += 1
-        return expr
     elseif is_token_type(token, FunctionToken)
-        if current_token_index[] > length(tokens) || !is_token_type(tokens[current_token_index[]], LeftParenToken)
-            error("Expected '(' after function token")
-        end
-        current_token_index[] += 1
-
-        arg = parse_expr_precedence1(tokens, current_token_index)
-
-        if current_token_index[] > length(tokens) || !is_token_type(tokens[current_token_index[]], RightParenToken)
-            error("Expected ')' after function argument")
-        end
-        current_token_index[] += 1
-
-        return FunctionNode(token.func, arg)
+        arg = pop!(stack)
+        push!(stack, FunctionNode(token.func, arg))
     else
-        error("Unexpected token: $token")
+        error("Not implemented token application rule.")
     end
 end
 
-parse_function(expr::String) = parser(tokenize(expr))
+function _precedence(token::LeftParenToken)
+    return 0
+end
+
+function _precedence(token::OperatorToken)
+    pmap = Dict(
+        '+' => 1,
+        '-' => 1,
+        '*' => 2,
+        '/' => 2,
+        '^' => 3,
+    )
+    return get(pmap, token.op) do
+        error("Unimplemented operator.")
+    end
+end
+
+function _precedence(token::FunctionToken)
+    return 4
+end
+
+parse_function(expr::String) = parse_tokens(tokenize(expr))
