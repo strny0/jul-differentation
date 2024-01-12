@@ -15,5 +15,6 @@ export parse_function,
     ast_to_dot,
     evaluate,
     format_function,
-    simplify
+    simplify,
+    tokenize
 end
