@@ -1,4 +1,5 @@
 abstract type Token end
+const TokenVector = AbstractVector{Token}
 
 struct VariableToken <: Token
     name::String
@@ -31,8 +32,39 @@ struct FunctionToken <: Token
 end
 Base.show(io::IO, m::FunctionToken) = print(io, n.func)
 
+"""
+    tokenize(expr::String)::TokenVector
 
-function tokenize(expr::String)
+Tokenizes a given mathematical expression `expr` into a vector of tokens.
+
+# Arguments
+- `expr::String`: The mathematical expression to be tokenized.
+# Returns
+- `TokenVector`: A vector of tokens representing the parsed components of the expression.
+
+# Token Types
+- `VariableToken`: Represents variable names.
+- `ConstantToken`: Represents constant names.
+- `NumberToken`: Represents numerical values.
+- `LeftParenToken`: Represents a left parenthesis '('.
+- `RightParenToken`: Represents a right parenthesis ')'.
+- `OperatorToken`: Represents an operator (+, -, *, /, ^, unary +, unary -).
+- `FunctionToken`: Represents function names.
+
+# Processing
+- Numerical values, including those with decimal points and scientific notation (e.g., 1.23, 4e5), are tokenized as `NumberToken`.
+- Operators are identified and tokenized as `OperatorToken`. Special handling for unary + and - is included.
+- Parentheses are tokenized as `LeftParenToken` and `RightParenToken`.
+- Alphabetic strings (and those with underscores or digits) are tokenized as either `VariableToken`, `ConstantToken`, or `FunctionToken` based on their matching in `supported_functions` and `constant_map`.
+- The function skips unrecognized characters, including whitespace.
+
+# Examples
+```julia
+tokenize("3 + x") # => [NumberToken(3.0), OperatorToken('+'), VariableToken("x")]
+tokenize("sin(x)") # => [FunctionToken("sin"), LeftParenToken(), VariableToken("x"), RightParenToken()]
+```
+"""
+function tokenize(expr::String)::TokenVector
     tokens = Token[]
     i = 1
     prev_token = nothing
