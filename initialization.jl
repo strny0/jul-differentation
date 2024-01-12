@@ -1,3 +1,5 @@
+#!/usr/bin/env julia
+
 @info "Installing and precompiling packages"
 
 @time begin

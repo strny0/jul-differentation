@@ -1,6 +1,8 @@
 abstract type ASTNode end
 
 abstract type TermNode <: ASTNode end
+abstract type UnaryNode <: TermNode end
+abstract type BinaryNode <: UnaryNode end
 
 struct NumberNode <: TermNode
     value::Float64
@@ -18,19 +20,19 @@ struct ConstantNode <: TermNode
 end
 Base.show(io::IO, m::ConstantNode) = print(io, m.name)
 
-struct FunctionNode <: ASTNode
+struct FunctionNode <: UnaryNode
     func::String
     arg::ASTNode
 end
 Base.show(io::IO, m::FunctionNode) = print(io, m.func, '(', m.arg, ')')
 
-struct UnaryOpNode <: ASTNode
+struct UnaryOpNode <: UnaryNode
     op::Char
     child::ASTNode
 end
 Base.show(io::IO, m::UnaryOpNode) = print(io, m.op, m.child)
 
-struct BinaryOpNode <: ASTNode
+struct BinaryOpNode <: BinaryNode
     op::Char
     left::ASTNode
     right::ASTNode
