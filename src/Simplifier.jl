@@ -114,6 +114,14 @@ function simplify_rule(node::BinaryOpNode, simplified_nodes::Dict{ASTNode,ASTNod
         if (left == right)
             return BinaryOpNode('^', left, NumberNode(2.0))
         end
+
+        # Take unary minus out before the multiplication
+        if (left isa UnaryOpNode && left.op == '-')
+            return UnaryOpNode('-', BinaryOpNode('*', left.child, right))
+        elseif (right isa UnaryOpNode && right.op == '-')
+            return UnaryOpNode('-', BinaryOpNode('*', left, right.child))
+        end
+
     elseif node.op == "/"
         if (left == NumberNode(0.0))
             return NumberNode(0.0)
